@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playoffs — TLTJB</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <script src="assets/nav.js"></script>
+
+  <div class="page-header">
+    <h1>🏆 Playoffs & Championships</h1>
+    <p>Brackets, championship history, and all-time playoff standings</p>
+  </div>
+
+  <div class="container">
+
+    <div class="section">
+      <h2 class="section-title">🏆 Championship History</h2>
+      <div class="champ-grid" id="champ-grid"></div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">All-Time Playoff Standings</h2>
+      <div class="table-wrap">
+        <table data-sortable data-numeric-cols="1,2,3,4,5,6">
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Appearances</th>
+              <th>W</th>
+              <th>L</th>
+              <th>Win%</th>
+              <th>Championships</th>
+            </tr>
+          </thead>
+          <tbody id="playoff-standings-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Season Bracket</h2>
+      <div class="season-selector">
+        <label>Season:</label>
+        <select id="bracket-season-sel"></select>
+      </div>
+      <div id="bracket-display"></div>
+    </div>
+
+  </div>
+
+  <script src="assets/utils.js"></script>
+  <script>
+  async function init() {
+    const data = await loadData();
+    const { championship_history: ch, playoff_standings, playoff_brackets, meta } = data;
+
+    // Champ grid
+    const grid = document.getElementById('champ-grid');
+    ch.forEach((c, i) => {
+      const div = document.createElement('div');
+      div.className = 'champ-card' + (i === 0 ? ' latest' : '');
+      div.innerHTML = `
+        <div class="trophy-icon">🏆</div>
+        <div class="champ-year">${c.year}</div>
+        <div class="champ-name">${c.champion_display}</div>
+        <div class="champ-score">${fmt(c.champion_pts)} – ${fmt(c.runner_up_pts)}</div>
+        <div class="text-muted" style="font-size:0.75rem;margin-top:0.2rem">def. ${c.runner_up_display}</div>`;
+      grid.appendChild(div);
+    });
+
+    // Playoff standings
+    const body = document.getElementById('playoff-standings-body');
+    playoff_standings.forEach(row => {
+      const tr = document.createElement('tr');
+      if (row.championships > 0) tr.classList.add('champ-row');
+      tr.innerHTML = `
+        <td class="name-col"><strong>${row.display}</strong>${row.championships > 0 ? `<span class="champ-badge">🏆 ${row.championships}</span>` : ''}</td>
+        <td>${row.appearances}</td>
+        <td>${row.wins}</td>
+        <td>${row.losses}</td>
+        <td>${fmtPct(row.win_pct)}</td>
+        <td>${row.championships}</td>`;
+      body.appendChild(tr);
+    });
+
+    // Bracket season selector
+    const sel = document.getElementById('bracket-season-sel');
+    const years = [...meta.years].sort((a, b) => b - a);
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      sel.appendChild(opt);
+    });
+
+    function renderBracket(year) {
+      const bracket = playoff_brackets[year] || {};
+      const div = document.getElementById('bracket-display');
+      div.innerHTML = '';
+      const roundOrder = ['Quarters', 'Semis', 'Championship', '3rd Place'];
+      let any = false;
+      roundOrder.forEach(rnd => {
+        const games = bracket[rnd];
+        if (!games || games.length === 0) return;
+        any = true;
+        const section = document.createElement('div');
+        section.className = 'bracket-round';
+        section.innerHTML = `<div class="bracket-round-title">${rnd}</div><div class="bracket-games" id="pg-${rnd}"></div>`;
+        div.appendChild(section);
+        const pgDiv = section.querySelector(`#pg-${rnd}`);
+        games.forEach(g => {
+          const gc = document.createElement('div');
+          gc.className = 'bracket-game';
+          gc.innerHTML = `
+            <div class="bg-team winner">
+              <span class="team-name">🏆 ${g.winner_display}</span>
+              <span class="team-pts">${fmt(g.winner_pts)}</span>
+            </div>
+            <div class="bg-team">
+              <span class="team-name">${g.loser_display}</span>
+              <span class="team-pts">${fmt(g.loser_pts)}</span>
+            </div>`;
+          pgDiv.appendChild(gc);
+        });
+      });
+      if (!any) div.innerHTML = '<p class="text-muted">No playoff data for this season.</p>';
+    }
+
+    sel.addEventListener('change', () => renderBracket(parseInt(sel.value)));
+    renderBracket(years[0]);
+    initSortableTables();
+  }
+  init();
+  </script>
+</body>
+</html>

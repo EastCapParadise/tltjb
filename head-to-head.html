@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Head to Head — TLTJB</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <script src="assets/nav.js"></script>
+
+  <div class="page-header">
+    <h1>⚔️ Head to Head</h1>
+    <p>Full rivalry records and matchup history between any two teams</p>
+  </div>
+
+  <div class="container">
+    <div class="dropdown-row">
+      <select id="team1-sel"><option value="">— Select Team 1 —</option></select>
+      <span class="vs-label">vs</span>
+      <select id="team2-sel"><option value="">— Select Team 2 —</option></select>
+    </div>
+
+    <div id="h2h-content">
+      <div class="prompt-state"><p>Select two teams above to see their rivalry history.</p></div>
+    </div>
+  </div>
+
+  <script src="assets/utils.js"></script>
+  <script>
+  async function init() {
+    const data = await loadData();
+    const { owner_stats, h2h, meta } = data;
+
+    const teams = Object.values(owner_stats).sort((a, b) => a.display.localeCompare(b.display));
+    const sel1 = document.getElementById('team1-sel');
+    const sel2 = document.getElementById('team2-sel');
+
+    teams.forEach(t => {
+      [sel1, sel2].forEach(sel => {
+        const opt = document.createElement('option');
+        opt.value = t.team;
+        opt.textContent = t.display;
+        sel.appendChild(opt);
+      });
+    });
+
+    function render() {
+      const t1 = sel1.value;
+      const t2 = sel2.value;
+      const content = document.getElementById('h2h-content');
+      if (!t1 || !t2 || t1 === t2) {
+        content.innerHTML = '<div class="prompt-state"><p>Select two different teams to see their rivalry history.</p></div>';
+        return;
+      }
+
+      const rec = h2h[t1]?.[t2] || { reg_wins: 0, reg_losses: 0, pl_wins: 0, pl_losses: 0, total_wins: 0, total_losses: 0, matchups: [] };
+      const d1 = owner_stats[t1].display;
+      const d2 = owner_stats[t2].display;
+
+      // Scores for each team
+      const t1scores = rec.matchups.filter(m => m.winner === t1).map(m => m.winner_pts)
+        .concat(rec.matchups.filter(m => m.loser === t1).map(m => m.loser_pts));
+      const t2scores = rec.matchups.filter(m => m.winner === t2).map(m => m.winner_pts)
+        .concat(rec.matchups.filter(m => m.loser === t2).map(m => m.loser_pts));
+      const t1avg = t1scores.length ? (t1scores.reduce((a, b) => a + b, 0) / t1scores.length) : 0;
+      const t2avg = t2scores.length ? (t2scores.reduce((a, b) => a + b, 0) / t2scores.length) : 0;
+
+      const t1bigWin = rec.matchups.filter(m => m.winner === t1).sort((a, b) => b.margin - a.margin)[0];
+      const t2bigWin = rec.matchups.filter(m => m.winner === t2).sort((a, b) => b.margin - a.margin)[0];
+
+      content.innerHTML = `
+        <div class="section">
+          <div class="h2h-summary">
+            <div>
+              <div class="h2h-team">${d1}</div>
+              <div class="h2h-record">${rec.total_wins}-${rec.total_losses}</div>
+              <div class="text-muted" style="font-size:0.8rem">RS: ${rec.reg_wins}-${rec.reg_losses} &nbsp;|&nbsp; PO: ${rec.pl_wins}-${rec.pl_losses}</div>
+            </div>
+            <div class="h2h-divider">⚔️</div>
+            <div>
+              <div class="h2h-team">${d2}</div>
+              <div class="h2h-record">${rec.total_losses}-${rec.total_wins}</div>
+              <div class="text-muted" style="font-size:0.8rem">RS: ${rec.reg_losses}-${rec.reg_wins} &nbsp;|&nbsp; PO: ${rec.pl_losses}-${rec.pl_wins}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+            <div class="card">
+              <div class="stat-label" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.5rem">${d1}</div>
+              <div>Avg Score: <strong>${fmt(t1avg)}</strong></div>
+              <div class="text-muted" style="font-size:0.8rem;margin-top:0.3rem">Biggest win: ${t1bigWin ? `+${fmt(t1bigWin.margin)} (${t1bigWin.year} Wk ${t1bigWin.week})` : '—'}</div>
+            </div>
+            <div class="card">
+              <div class="stat-label" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.5rem">${d2}</div>
+              <div>Avg Score: <strong>${fmt(t2avg)}</strong></div>
+              <div class="text-muted" style="font-size:0.8rem;margin-top:0.3rem">Biggest win: ${t2bigWin ? `+${fmt(t2bigWin.margin)} (${t2bigWin.year} Wk ${t2bigWin.week})` : '—'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">Full Matchup History</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Year</th><th>Wk</th><th>Type</th><th>Winner</th><th>Score</th><th>Loser</th><th>Score</th><th>Margin</th></tr></thead>
+              <tbody id="matchup-hist-body"></tbody>
+            </table>
+          </div>
+        </div>`;
+
+      const mBody = document.getElementById('matchup-hist-body');
+      const sorted = [...rec.matchups].sort((a, b) => b.year - a.year || b.week - a.week);
+      sorted.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${m.year}</td>
+          <td>${m.week}</td>
+          <td>${typeLabel(m.type, m.playoff_round)}</td>
+          <td class="name-col text-gold"><strong>${m.winner_display}</strong></td>
+          <td>${fmt(m.winner_pts)}</td>
+          <td class="name-col">${m.loser_display}</td>
+          <td>${fmt(m.loser_pts)}</td>
+          <td class="text-green">+${fmt(m.margin)}</td>`;
+        mBody.appendChild(tr);
+      });
+    }
+
+    sel1.addEventListener('change', render);
+    sel2.addEventListener('change', render);
+  }
+  init();
+  </script>
+</body>
+</html>

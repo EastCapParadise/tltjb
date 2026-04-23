@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Records — TLTJB</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <script src="assets/nav.js"></script>
+
+  <div class="page-header">
+    <h1>📊 Records & Milestones</h1>
+    <p>Top scores, blowouts, woodsheds, streaks, and league milestones</p>
+  </div>
+
+  <div class="container">
+
+    <!-- Scoring Records -->
+    <div class="section">
+      <h2 class="section-title">🔥 Top 10 Highest Scores</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Team</th><th>Score</th><th>Year</th><th>Wk</th><th>Type</th><th>Opponent</th></tr></thead>
+          <tbody id="top-high-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">🧊 Top 10 Lowest Scores</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Team</th><th>Score</th><th>Year</th><th>Wk</th><th>Type</th><th>Opponent</th></tr></thead>
+          <tbody id="top-low-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">💥 Top 10 Biggest Blowouts</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Winner</th><th>Score</th><th>Loser</th><th>Score</th><th>Margin</th><th>Year</th><th>Wk</th><th>Type</th></tr></thead>
+          <tbody id="blowout-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Woodsheds -->
+    <div class="section">
+      <h2 class="section-title">🪵 Woodsheds (50+ pt margin)</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+        <div>
+          <div class="section-title" style="font-size:0.95rem;margin-bottom:0.75rem">Most Given</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Team</th><th>Count</th></tr></thead>
+              <tbody id="wood-given-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="section-title" style="font-size:0.95rem;margin-bottom:0.75rem">Most Received</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Team</th><th>Count</th></tr></thead>
+              <tbody id="wood-rcvd-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="section-title" style="font-size:0.95rem;margin-bottom:0.75rem">Top 10 Biggest Woodsheds</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Winner</th><th>Score</th><th>Loser</th><th>Score</th><th>Margin</th><th>Year</th><th>Wk</th><th>Type</th></tr></thead>
+          <tbody id="woodshed-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Season Records -->
+    <div class="section">
+      <h2 class="section-title">📅 Season Records</h2>
+      <div class="records-strip" id="season-rec-strip" style="grid-template-columns:repeat(3,1fr);margin-bottom:0"></div>
+    </div>
+
+    <!-- Streaks -->
+    <div class="section">
+      <h2 class="section-title">🔥 Current Streaks</h2>
+      <div class="streak-cards" id="current-streaks"></div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">🏅 Top 10 Win Streaks All Time</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Team</th><th>Streak</th><th>Years</th></tr></thead>
+          <tbody id="win-streak-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">📉 Top 10 Loss Streaks All Time</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Team</th><th>Streak</th><th>Years</th></tr></thead>
+          <tbody id="loss-streak-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Milestones -->
+    <div class="section">
+      <h2 class="section-title">🎖️ Owner Milestones</h2>
+      <div class="table-wrap">
+        <table data-sortable data-numeric-cols="1,2,3,4,5,6,7,8">
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Wins</th>
+              <th>Win%</th>
+              <th>Pts For</th>
+              <th>PPG</th>
+              <th>Titles</th>
+              <th>Playoffs</th>
+              <th>Woodsheds Given</th>
+              <th>Woodsheds Rcvd</th>
+            </tr>
+          </thead>
+          <tbody id="milestones-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="assets/utils.js"></script>
+  <script>
+  async function init() {
+    const data = await loadData();
+    const { records, season_records, streaks, milestones } = data;
+
+    // Top high scores
+    const highBody = document.getElementById('top-high-body');
+    records.top10_high.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      if (i === 0) tr.classList.add('champ-row');
+      tr.innerHTML = `<td class="rank-num">${i+1}</td><td class="name-col"><strong>${r.display}</strong></td><td class="text-gold"><strong>${fmt(r.pts)}</strong></td><td>${r.year}</td><td>${r.week}</td><td>${typeLabel(r.type, r.playoff_round)}</td><td>${r.opp_display}</td>`;
+      highBody.appendChild(tr);
+    });
+
+    // Top low scores
+    const lowBody = document.getElementById('top-low-body');
+    records.top10_low.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="rank-num">${i+1}</td><td class="name-col"><strong>${r.display}</strong></td><td class="text-red"><strong>${fmt(r.pts)}</strong></td><td>${r.year}</td><td>${r.week}</td><td>${typeLabel(r.type, r.playoff_round)}</td><td>${r.opp_display}</td>`;
+      lowBody.appendChild(tr);
+    });
+
+    // Blowouts
+    const blowBody = document.getElementById('blowout-body');
+    records.top10_blowouts.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      if (i === 0) tr.classList.add('champ-row');
+      tr.innerHTML = `<td class="rank-num">${i+1}</td><td class="name-col text-gold"><strong>${r.winner_display}</strong></td><td>${fmt(r.winner_pts)}</td><td class="name-col">${r.loser_display}</td><td>${fmt(r.loser_pts)}</td><td class="text-green"><strong>+${fmt(r.margin)}</strong></td><td>${r.year}</td><td>${r.week}</td><td>${typeLabel(r.type, r.playoff_round)}</td>`;
+      blowBody.appendChild(tr);
+    });
+
+    // Woodsheds
+    const wBody = document.getElementById('woodshed-body');
+    records.woodsheds.top10.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      if (i === 0) tr.classList.add('champ-row');
+      tr.innerHTML = `<td class="rank-num">${i+1}</td><td class="name-col text-gold"><strong>${r.winner_display}</strong></td><td>${fmt(r.winner_pts)}</td><td class="name-col">${r.loser_display}</td><td>${fmt(r.loser_pts)}</td><td class="text-green"><strong>+${fmt(r.margin)}</strong></td><td>${r.year}</td><td>${r.week}</td><td>${typeLabel(r.type, r.playoff_round)}</td>`;
+      wBody.appendChild(tr);
+    });
+
+    const givenBody = document.getElementById('wood-given-body');
+    records.woodsheds.given_leaderboard.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="name-col"><strong>${r.display}</strong></td><td><strong>${r.count}</strong></td>`;
+      givenBody.appendChild(tr);
+    });
+
+    const rcvdBody = document.getElementById('wood-rcvd-body');
+    records.woodsheds.received_leaderboard.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="name-col"><strong>${r.display}</strong></td><td><strong>${r.count}</strong></td>`;
+      rcvdBody.appendChild(tr);
+    });
+
+    // Season records strip
+    const srStrip = document.getElementById('season-rec-strip');
+    const sr = season_records;
+    const tiles = [
+      { label: 'Best Record', value: `${sr.best_record.wins}-${sr.best_record.losses}`, holder: sr.best_record.display, meta: sr.best_record.year },
+      { label: 'Worst Record', value: `${sr.worst_record.wins}-${sr.worst_record.losses}`, holder: sr.worst_record.display, meta: sr.worst_record.year },
+      { label: 'Highest PPG', value: fmt(sr.highest_ppg.ppg), holder: sr.highest_ppg.display, meta: sr.highest_ppg.year },
+      { label: 'Lowest PPG', value: fmt(sr.lowest_ppg.ppg), holder: sr.lowest_ppg.display, meta: sr.lowest_ppg.year },
+      { label: 'Most Pts For', value: fmt(sr.highest_pf.points_for, 0), holder: sr.highest_pf.display, meta: sr.highest_pf.year },
+      { label: 'Fewest Pts For', value: fmt(sr.lowest_pf.points_for, 0), holder: sr.lowest_pf.display, meta: sr.lowest_pf.year },
+    ];
+    tiles.forEach(t => {
+      const div = document.createElement('div');
+      div.className = 'record-tile';
+      div.innerHTML = `<div class="record-label">${t.label}</div><div class="record-value">${t.value}</div><div class="record-holder">${t.holder}</div><div class="record-meta">${t.meta}</div>`;
+      srStrip.appendChild(div);
+    });
+
+    // Current streaks
+    const csDiv = document.getElementById('current-streaks');
+    streaks.current.forEach(s => {
+      const div = document.createElement('div');
+      div.className = `streak-card ${s.type === 'W' ? 'win' : 'loss'}`;
+      div.innerHTML = `<div class="streak-team">${s.display}</div><div class="streak-num">${s.length}</div><div class="streak-label">${s.type === 'W' ? 'Win' : 'Loss'} Streak</div>`;
+      csDiv.appendChild(div);
+    });
+
+    // Win streaks
+    const wsBody = document.getElementById('win-streak-body');
+    streaks.top10_win_streaks.forEach((s, i) => {
+      const tr = document.createElement('tr');
+      if (i === 0) tr.classList.add('champ-row');
+      tr.innerHTML = `<td class="rank-num">${i+1}</td><td class="name-col"><strong>${s.display}</strong></td><td class="text-green"><strong>${s.length}</strong></td><td class="text-muted">${s.start_year}–${s.end_year}</td>`;
+      wsBody.appendChild(tr);
+    });
+
+    // Loss streaks
+    const lsBody = document.getElementById('loss-streak-body');
+    streaks.top10_loss_streaks.forEach((s, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="rank-num">${i+1}</td><td class="name-col"><strong>${s.display}</strong></td><td class="text-red"><strong>${s.length}</strong></td><td class="text-muted">${s.start_year}–${s.end_year}</td>`;
+      lsBody.appendChild(tr);
+    });
+
+    // Milestones
+    const mBody = document.getElementById('milestones-body');
+    milestones.sort((a, b) => b.wins - a.wins).forEach(m => {
+      const tr = document.createElement('tr');
+      if (m.championships > 0) tr.classList.add('champ-row');
+      tr.innerHTML = `
+        <td class="name-col"><strong>${m.display}</strong>${m.championships > 0 ? `<span class="champ-badge">🏆 ${m.championships}</span>` : ''}</td>
+        <td>${m.wins}</td>
+        <td>${fmtPct(m.win_pct)}</td>
+        <td>${fmt(m.points_for, 0)}</td>
+        <td>${fmt(m.ppg)}</td>
+        <td>${m.championships}</td>
+        <td>${m.playoff_appearances}</td>
+        <td>${m.woodsheds_given}</td>
+        <td>${m.woodsheds_received}</td>`;
+      mBody.appendChild(tr);
+    });
+
+    initSortableTables();
+  }
+  init();
+  </script>
+</body>
+</html>

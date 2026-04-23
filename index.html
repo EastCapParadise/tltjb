@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TLTJB — The League That Johnny Built</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <script src="assets/nav.js"></script>
+
+  <section class="hero">
+    <img src="assets/images/logo.png" alt="TLTJB Logo" class="hero-logo">
+    <h1 class="hero-title">The League That Johnny Built</h1>
+    <p class="hero-subtitle">Est. 2013 &nbsp;·&nbsp; ESPN Fantasy Football &nbsp;·&nbsp; 10 Teams</p>
+    <div class="hero-champ-banner">
+      <span class="trophy">🏆</span>
+      <span id="champ-banner">Loading...</span>
+    </div>
+  </section>
+
+  <div class="container">
+
+    <!-- Records Strip -->
+    <div class="section">
+      <div class="records-strip" id="records-strip">
+        <div class="record-tile"><div class="record-label">High Score</div><div class="record-value" id="rec-high">—</div><div class="record-holder" id="rec-high-team">—</div><div class="record-meta" id="rec-high-meta">—</div></div>
+        <div class="record-tile"><div class="record-label">Low Score</div><div class="record-value" id="rec-low">—</div><div class="record-holder" id="rec-low-team">—</div><div class="record-meta" id="rec-low-meta">—</div></div>
+        <div class="record-tile"><div class="record-label">Biggest Blowout</div><div class="record-value" id="rec-blowout">—</div><div class="record-holder" id="rec-blowout-team">—</div><div class="record-meta" id="rec-blowout-meta">—</div></div>
+        <div class="record-tile"><div class="record-label">Most Titles</div><div class="record-value" id="rec-titles">—</div><div class="record-holder" id="rec-titles-team">—</div><div class="record-meta">All Time</div></div>
+      </div>
+    </div>
+
+    <!-- All-time standings -->
+    <div class="section">
+      <h2 class="section-title">All-Time Regular Season Standings</h2>
+      <div class="table-wrap">
+        <table data-sortable data-numeric-cols="2,3,4,5,6,7,8,9">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Team</th>
+              <th>Seasons</th>
+              <th>W</th>
+              <th>L</th>
+              <th>Win%</th>
+              <th>Pts For</th>
+              <th>Pts Against</th>
+              <th>PPG</th>
+              <th>Titles</th>
+              <th>Playoffs</th>
+            </tr>
+          </thead>
+          <tbody id="standings-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Championship history -->
+    <div class="section">
+      <h2 class="section-title">🏆 Championship History</h2>
+      <div class="champ-grid" id="champ-grid"></div>
+    </div>
+
+    <!-- Navigation cards -->
+    <div class="section">
+      <h2 class="section-title">Explore the League</h2>
+      <div class="card-grid">
+        <a href="seasons.html" class="nav-card">
+          <div class="nav-card-icon">📅</div>
+          <div class="nav-card-title">Seasons</div>
+          <div class="nav-card-desc">Final standings, weekly results, and playoff brackets for every season</div>
+        </a>
+        <a href="owners.html" class="nav-card">
+          <div class="nav-card-icon">👤</div>
+          <div class="nav-card-title">Owners</div>
+          <div class="nav-card-desc">Career stats, season finishes, and head-to-head records for every team</div>
+        </a>
+        <a href="head-to-head.html" class="nav-card">
+          <div class="nav-card-icon">⚔️</div>
+          <div class="nav-card-title">Head to Head</div>
+          <div class="nav-card-desc">Full rivalry records and matchup history between any two teams</div>
+        </a>
+        <a href="playoffs.html" class="nav-card">
+          <div class="nav-card-icon">🏆</div>
+          <div class="nav-card-title">Playoffs</div>
+          <div class="nav-card-desc">Playoff brackets, championship history, and all-time playoff standings</div>
+        </a>
+        <a href="records.html" class="nav-card">
+          <div class="nav-card-icon">📊</div>
+          <div class="nav-card-title">Records</div>
+          <div class="nav-card-desc">Top scores, blowouts, woodsheds, streaks, and league milestones</div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="assets/utils.js"></script>
+  <script>
+  async function init() {
+    const data = await loadData();
+    const { alltime_records: rec, alltime_standings: st, championship_history: ch, meta } = data;
+
+    document.getElementById('champ-banner').textContent =
+      `${meta.reigning_champion_year} Champions: ${meta.reigning_champion}`;
+
+    // Records strip
+    document.getElementById('rec-high').textContent = fmt(rec.high_score.pts);
+    document.getElementById('rec-high-team').textContent = rec.high_score.display;
+    document.getElementById('rec-high-meta').textContent = `${rec.high_score.year} Wk ${rec.high_score.week}`;
+    document.getElementById('rec-low').textContent = fmt(rec.low_score.pts);
+    document.getElementById('rec-low-team').textContent = rec.low_score.display;
+    document.getElementById('rec-low-meta').textContent = `${rec.low_score.year} Wk ${rec.low_score.week}`;
+    document.getElementById('rec-blowout').textContent = `+${fmt(rec.biggest_blowout.margin)}`;
+    document.getElementById('rec-blowout-team').textContent = rec.biggest_blowout.winner_display;
+    document.getElementById('rec-blowout-meta').textContent = `vs ${rec.biggest_blowout.loser_display} (${rec.biggest_blowout.year})`;
+    document.getElementById('rec-titles').textContent = rec.most_titles.count;
+    document.getElementById('rec-titles-team').textContent = rec.most_titles.display;
+
+    // Standings
+    const tbody = document.getElementById('standings-body');
+    st.forEach((row, i) => {
+      const tr = document.createElement('tr');
+      if (row.championships > 0 && row.championships === Math.max(...st.map(r => r.championships))) tr.classList.add('champ-row');
+      tr.innerHTML = `
+        <td class="rank-num">${i + 1}</td>
+        <td class="name-col"><strong>${row.display}</strong>${row.championships > 0 ? `<span class="champ-badge">🏆 ${row.championships}</span>` : ''}</td>
+        <td>${row.seasons}</td>
+        <td>${row.wins}</td>
+        <td>${row.losses}</td>
+        <td>${fmtPct(row.win_pct)}</td>
+        <td>${fmt(row.points_for)}</td>
+        <td>${fmt(row.points_against)}</td>
+        <td>${fmt(row.ppg)}</td>
+        <td>${row.championships}</td>
+        <td>${row.playoff_appearances}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    // Championship grid
+    const grid = document.getElementById('champ-grid');
+    ch.forEach((c, i) => {
+      const div = document.createElement('div');
+      div.className = 'champ-card' + (i === 0 ? ' latest' : '');
+      div.innerHTML = `
+        <div class="trophy-icon">🏆</div>
+        <div class="champ-year">${c.year}</div>
+        <div class="champ-name">${c.champion_display}</div>
+        <div class="champ-score">${fmt(c.champion_pts)} – ${fmt(c.runner_up_pts)}</div>
+        <div class="text-muted" style="font-size:0.75rem;margin-top:0.2rem">def. ${c.runner_up_display}</div>`;
+      grid.appendChild(div);
+    });
+
+    initSortableTables();
+  }
+  init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "league": {
+    "name": "The League That Johnny Built",
+    "abbreviation": "TLTJB",
+    "founded": 2013,
+    "espn_league_id": 1034040,
+    "espn_s2": "AEBmtMlh8t704rF%2B19HLcqOJE8WfKAV1MmWkqO7VDFFbuyCkAnazyioK4vi6TZUWcjXf%2BbnpLiPGezi1xtPlrBwocp%2BRSBT6FcEtp8DAmleLLd%2B%2FsJbaL5rI0YJm0G6R6bkLxI%2FK5ZiLgktcAIClK3srRi4u34TSBLUU839pMAZWnLfXMD8IgKc80oh6ESql%2BcG%2BjCoINFD2k%2FQiYtntIospwfeDG3oqbdcHDbrlzl9aIr7MsJDqDK8zaHF%2FHIZOtxkAg8Wokl%2FRA7uZfbgaoCGnJwK5WzbA7v6NDLDq9CEjgw2%2FybQ3bmpL1qNfTCNvkdI%3D",
+    "swid": "{04AC0CA0-B885-49BD-B9C2-1ACE21A808A8}",
+    "reigning_champion": "Clay & Ryan",
+    "reigning_champion_year": 2025,
+    "woodshed_threshold": 50
+  },
+  "design": {
+    "primary_color": "#500000",
+    "secondary_color": "#FFFFFF",
+    "accent_color": "#8B0000",
+    "font_headline": "Oswald",
+    "font_body": "Open Sans"
+  },
+  "teams": [
+    { "id": "Brian/Travis",   "display": "Brian & Travis" },
+    { "id": "Clay/Ryan",      "display": "Clay & Ryan" },
+    { "id": "Dave/Nolan",     "display": "Dave & Nolan" },
+    { "id": "David/Marshall", "display": "David & Marshall" },
+    { "id": "Drew/Cam",       "display": "Drew & Cam" },
+    { "id": "Eric/Blake",     "display": "Eric & Blake" },
+    { "id": "Graham/Michael", "display": "Graham & Michael" },
+    { "id": "Pat/Tucker",     "display": "Pat & Tucker" },
+    { "id": "Trent/Colin",    "display": "Trent & Colin" },
+    { "id": "Walker/Cory",    "display": "Walker & Cory" }
+  ],
+  "excel_file": "data/TLTJB_historical_stats_Dec25.xlsx",
+  "sheets": {
+    "regular_season": "Regular Season",
+    "playoffs": "Playoffs",
+    "tables": "Tables"
+  }
+}

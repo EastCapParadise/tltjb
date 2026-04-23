@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seasons — TLTJB</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <script src="assets/nav.js"></script>
+
+  <div class="page-header">
+    <h1>📅 Seasons</h1>
+    <p>Final standings, weekly results, and playoff results for every season</p>
+  </div>
+
+  <div class="container">
+    <div class="season-selector">
+      <label>Select Season:</label>
+      <select id="season-select"></select>
+    </div>
+
+    <div id="champ-callout" class="champ-callout hidden">
+      <div class="trophy">🏆</div>
+      <div class="champ-text">
+        <div class="label">Champion</div>
+        <div class="name" id="cc-name">—</div>
+        <div class="score" id="cc-score">—</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Final Standings</h2>
+      <div class="table-wrap">
+        <table data-sortable data-numeric-cols="1,2,3,4,5,6,7,8">
+          <thead>
+            <tr>
+              <th>Finish</th>
+              <th>Team</th>
+              <th>Seed</th>
+              <th>W</th>
+              <th>L</th>
+              <th>Win%</th>
+              <th>Pts For</th>
+              <th>Pts Against</th>
+              <th>PPG</th>
+              <th>Playoffs</th>
+            </tr>
+          </thead>
+          <tbody id="season-standings-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Playoff Results</h2>
+      <div id="playoff-results"></div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Week by Week Results</h2>
+      <div id="weekly-results"></div>
+    </div>
+  </div>
+
+  <script src="assets/utils.js"></script>
+  <script>
+  async function init() {
+    const data = await loadData();
+    const { meta, season_tables, playoff_brackets, weekly_matchups } = data;
+    const years = [...meta.years].sort((a, b) => b - a);
+
+    const sel = document.getElementById('season-select');
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      sel.appendChild(opt);
+    });
+
+    function renderSeason(year) {
+      const table = season_tables[year] || [];
+      const bracket = playoff_brackets[year] || {};
+      const weekly = weekly_matchups[year] || [];
+
+      // Champion callout
+      const champ = table.find(r => r.final_rank === 1);
+      if (champ) {
+        const champGame = (bracket['Championship'] || [])[0];
+        document.getElementById('cc-name').textContent = champ.display;
+        document.getElementById('cc-score').textContent = champGame
+          ? `${fmt(champGame.winner_pts)} – ${fmt(champGame.loser_pts)} over ${champGame.loser_display}`
+          : `${champ.wins}-${champ.losses}`;
+        document.getElementById('champ-callout').classList.remove('hidden');
+      }
+
+      // Standings
+      const tbody = document.getElementById('season-standings-body');
+      tbody.innerHTML = '';
+      table.forEach(row => {
+        const tr = document.createElement('tr');
+        if (row.final_rank === 1) tr.classList.add('champ-row');
+        tr.innerHTML = `
+          <td>${row.final_rank}${row.final_rank === 1 ? ' 🏆' : ''}</td>
+          <td class="name-col"><strong>${row.display}</strong></td>
+          <td>${row.playoff_seed}</td>
+          <td>${row.wins}</td>
+          <td>${row.losses}</td>
+          <td>${fmtPct(row.wins / (row.wins + row.losses))}</td>
+          <td>${fmt(row.points_for)}</td>
+          <td>${fmt(row.points_against)}</td>
+          <td>${fmt(row.ppg)}</td>
+          <td>${row.playoff ? '✅' : ''}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      // Playoff results
+      const prDiv = document.getElementById('playoff-results');
+      prDiv.innerHTML = '';
+      const roundOrder = ['Quarters', 'Semis', 'Championship', '3rd Place'];
+      let hasPlayoffs = false;
+      roundOrder.forEach(rnd => {
+        const games = bracket[rnd];
+        if (!games || games.length === 0) return;
+        hasPlayoffs = true;
+        const section = document.createElement('div');
+        section.className = 'bracket-round';
+        section.innerHTML = `<div class="bracket-round-title">${rnd}</div><div class="bracket-games" id="bg-${rnd}"></div>`;
+        prDiv.appendChild(section);
+        const bgDiv = section.querySelector(`#bg-${rnd}`);
+        games.forEach(g => {
+          const gc = document.createElement('div');
+          gc.className = 'bracket-game';
+          gc.innerHTML = `
+            <div class="bg-team winner">
+              <span class="team-name">🏆 ${g.winner_display}</span>
+              <span class="team-pts">${fmt(g.winner_pts)}</span>
+            </div>
+            <div class="bg-team">
+              <span class="team-name">${g.loser_display}</span>
+              <span class="team-pts">${fmt(g.loser_pts)}</span>
+            </div>`;
+          bgDiv.appendChild(gc);
+        });
+      });
+      if (!hasPlayoffs) prDiv.innerHTML = '<p class="text-muted">No playoff data available.</p>';
+
+      // Weekly results
+      const wrDiv = document.getElementById('weekly-results');
+      wrDiv.innerHTML = '';
+      weekly.forEach(wk => {
+        const wkDiv = document.createElement('div');
+        wkDiv.style.marginBottom = '1.5rem';
+        wkDiv.innerHTML = `<div class="bracket-round-title" style="margin-bottom:0.5rem">Week ${wk.week}</div>`;
+        const wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+        const tbl = document.createElement('table');
+        tbl.innerHTML = `<thead><tr>
+          <th>Winner</th><th>Score</th><th>Record Before</th>
+          <th>vs</th>
+          <th>Loser</th><th>Score</th><th>Record Before</th>
+          <th>Margin</th>
+        </tr></thead>`;
+        const tb = document.createElement('tbody');
+        wk.games.forEach(g => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="name-col text-gold"><strong>${g.winner_display}</strong></td>
+            <td>${fmt(g.winner_pts)}</td>
+            <td class="text-muted">${fmtRecord(g.winner_record_before.wins, g.winner_record_before.losses)}</td>
+            <td class="text-muted">vs</td>
+            <td class="name-col">${g.loser_display}</td>
+            <td>${fmt(g.loser_pts)}</td>
+            <td class="text-muted">${fmtRecord(g.loser_record_before.wins, g.loser_record_before.losses)}</td>
+            <td class="text-green">+${fmt(g.margin)}</td>`;
+          tb.appendChild(tr);
+        });
+        tbl.appendChild(tb);
+        wrap.appendChild(tbl);
+        wkDiv.appendChild(wrap);
+        wrDiv.appendChild(wkDiv);
+      });
+    }
+
+    sel.addEventListener('change', () => renderSeason(parseInt(sel.value)));
+    renderSeason(years[0]);
+    initSortableTables();
+  }
+  init();
+  </script>
+</body>
+</html>

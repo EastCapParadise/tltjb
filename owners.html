@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owners — TLTJB</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <script src="assets/nav.js"></script>
+
+  <div class="page-header">
+    <h1>👤 Owner Profiles</h1>
+    <p>Career stats and history for every team</p>
+  </div>
+
+  <div class="container">
+    <div id="owner-landing">
+      <div class="owner-grid" id="owner-grid"></div>
+    </div>
+    <div id="owner-profile" class="hidden"></div>
+  </div>
+
+  <script src="assets/utils.js"></script>
+  <script>
+  let DATA_CACHE = null;
+  let finishChart = null;
+
+  async function init() {
+    DATA_CACHE = await loadData();
+    const { owner_stats, meta } = DATA_CACHE;
+    const grid = document.getElementById('owner-grid');
+
+    // Sort by win%
+    const teams = Object.values(owner_stats).sort((a, b) => b.reg_pct - a.reg_pct);
+    teams.forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'owner-card';
+      card.innerHTML = `
+        <div class="owner-icon">🏈</div>
+        <div class="owner-name">${s.display}</div>
+        <div class="owner-meta">
+          <div>${s.years_active[0]}–${s.years_active[s.years_active.length - 1]} &nbsp;·&nbsp; ${s.seasons} seasons</div>
+          <div>${fmtRecord(s.reg_wins, s.reg_losses)} (${fmtPct(s.reg_pct)})</div>
+          <div class="owner-titles">${s.championships > 0 ? '🏆 '.repeat(s.championships) + s.championships + ' title' + (s.championships > 1 ? 's' : '') : 'No titles yet'}</div>
+          <div>${s.playoff_appearances} playoff appearances</div>
+        </div>`;
+      card.addEventListener('click', () => showProfile(s.team));
+      grid.appendChild(card);
+    });
+  }
+
+  function showProfile(teamId) {
+    const { owner_stats, h2h, meta, season_tables } = DATA_CACHE;
+    const s = owner_stats[teamId];
+    document.getElementById('owner-landing').classList.add('hidden');
+    const prof = document.getElementById('owner-profile');
+    prof.classList.remove('hidden');
+
+    const allTeams = Object.values(owner_stats).filter(o => o.team !== teamId).sort((a, b) => a.display.localeCompare(b.display));
+    const finishes = s.season_finishes;
+    const showChart = finishes.length >= 3;
+
+    prof.innerHTML = `
+      <button class="profile-back" onclick="showLanding()">← Back to All Teams</button>
+      <div class="champ-callout" style="margin-bottom:1.5rem">
+        <div class="trophy">🏈</div>
+        <div class="champ-text">
+          <div class="label">Team</div>
+          <div class="name">${s.display}</div>
+          <div class="score">${s.years_active[0]}–${s.years_active[s.years_active.length - 1]} · ${s.seasons} seasons</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Career Stats</h2>
+        <div class="stats-grid">
+          <div class="stat-tile"><div class="stat-label">Record</div><div class="stat-value">${fmtRecord(s.reg_wins, s.reg_losses)}</div></div>
+          <div class="stat-tile"><div class="stat-label">Win %</div><div class="stat-value">${fmtPct(s.reg_pct)}</div></div>
+          <div class="stat-tile"><div class="stat-label">PPG</div><div class="stat-value">${fmt(s.ppg)}</div></div>
+          <div class="stat-tile"><div class="stat-label">Pts For</div><div class="stat-value">${fmt(s.points_for, 0)}</div></div>
+          <div class="stat-tile"><div class="stat-label">Titles</div><div class="stat-value text-gold">${s.championships}</div></div>
+          <div class="stat-tile"><div class="stat-label">Playoffs</div><div class="stat-value">${s.playoff_appearances}</div></div>
+          <div class="stat-tile"><div class="stat-label">PO Record</div><div class="stat-value">${fmtRecord(s.playoff_wins, s.playoff_losses)}</div></div>
+        </div>
+      </div>
+
+      ${showChart ? `
+      <div class="section">
+        <h2 class="section-title">Season Finishes</h2>
+        <div class="chart-container"><canvas id="finish-chart"></canvas></div>
+      </div>` : ''}
+
+      <div class="section">
+        <h2 class="section-title">Season by Season</h2>
+        <div class="table-wrap">
+          <table data-sortable data-numeric-cols="1,2,3,4,5,6,7,8">
+            <thead><tr><th>Year</th><th>W</th><th>L</th><th>Win%</th><th>Pts For</th><th>Pts Against</th><th>PPG</th><th>Seed</th><th>Finish</th><th>Playoffs</th></tr></thead>
+            <tbody id="season-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Head to Head vs All Teams</h2>
+        <div class="table-wrap">
+          <table data-sortable data-numeric-cols="2,3,4,5,6,7">
+            <thead><tr><th>Opponent</th><th>RS W</th><th>RS L</th><th>RS Win%</th><th>PO W</th><th>PO L</th><th>Total W</th><th>Total L</th></tr></thead>
+            <tbody id="h2h-table-body"></tbody>
+          </table>
+        </div>
+      </div>`;
+
+    // Season by season table
+    const allYears = meta.years;
+    const stBody = document.getElementById('season-table-body');
+    allYears.slice().reverse().forEach(y => {
+      const yearTable = DATA_CACHE.season_tables[y] || [];
+      const row = yearTable.find(r => r.team === teamId);
+      if (!row) return;
+      const tr = document.createElement('tr');
+      if (row.final_rank === 1) tr.classList.add('champ-row');
+      tr.innerHTML = `
+        <td>${y}</td>
+        <td>${row.wins}</td>
+        <td>${row.losses}</td>
+        <td>${fmtPct(row.wins / (row.wins + row.losses))}</td>
+        <td>${fmt(row.points_for)}</td>
+        <td>${fmt(row.points_against)}</td>
+        <td>${fmt(row.ppg)}</td>
+        <td>${row.playoff_seed}</td>
+        <td>${row.final_rank}${row.final_rank === 1 ? ' 🏆' : ''}</td>
+        <td>${row.playoff ? '✅' : ''}</td>`;
+      stBody.appendChild(tr);
+    });
+
+    // H2H table
+    const h2hBody = document.getElementById('h2h-table-body');
+    const teamH2H = h2h[teamId] || {};
+    allTeams.forEach(opp => {
+      const rec = teamH2H[opp.team] || { reg_wins: 0, reg_losses: 0, pl_wins: 0, pl_losses: 0, total_wins: 0, total_losses: 0 };
+      const tr = document.createElement('tr');
+      const total = rec.total_wins + rec.total_losses;
+      const pct = total ? rec.total_wins / total : 0;
+      tr.innerHTML = `
+        <td class="name-col"><strong>${opp.display}</strong></td>
+        <td>${rec.reg_wins}</td>
+        <td>${rec.reg_losses}</td>
+        <td>${rec.reg_wins + rec.reg_losses ? fmtPct(rec.reg_wins / (rec.reg_wins + rec.reg_losses)) : '—'}</td>
+        <td>${rec.pl_wins}</td>
+        <td>${rec.pl_losses}</td>
+        <td>${rec.total_wins}</td>
+        <td>${rec.total_losses}</td>`;
+      h2hBody.appendChild(tr);
+    });
+
+    // Finish chart
+    if (showChart) {
+      if (finishChart) finishChart.destroy();
+      const ctx = document.getElementById('finish-chart').getContext('2d');
+      const labels = finishes.map(f => f.year);
+      const values = finishes.map(f => f.rank);
+      const teamCount = meta.teams.length;
+      finishChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Finish',
+            data: values,
+            borderColor: '#500000',
+            backgroundColor: 'rgba(80,0,0,0.15)',
+            pointBackgroundColor: '#c8a951',
+            pointRadius: 5,
+            tension: 0.3,
+            fill: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              reverse: true,
+              min: 1,
+              max: teamCount,
+              ticks: { stepSize: 1, color: '#888' },
+              grid: { color: '#222' },
+            },
+            x: { ticks: { color: '#888' }, grid: { color: '#222' } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `Finish: ${ctx.raw}${ctx.raw === 1 ? ' 🏆' : ''}`,
+              }
+            }
+          }
+        }
+      });
+    }
+
+    initSortableTables();
+  }
+
+  function showLanding() {
+    document.getElementById('owner-landing').classList.remove('hidden');
+    document.getElementById('owner-profile').classList.add('hidden');
+    document.getElementById('owner-profile').innerHTML = '';
+    if (finishChart) { finishChart.destroy(); finishChart = null; }
+  }
+
+  init();
+  </script>
+</body>
+</html>
