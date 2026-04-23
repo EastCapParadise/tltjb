@@ -95,7 +95,7 @@
       "points_for": 18649.98,
       "points_against": 18283.58,
       "ppg": 107.18,
-      "championships": 2,
+      "championships": 3,
       "playoff_appearances": 10
     },
     {
@@ -108,7 +108,7 @@
       "points_for": 18450.32,
       "points_against": 18344.8,
       "ppg": 106.04,
-      "championships": 3,
+      "championships": 2,
       "playoff_appearances": 9
     },
     {
@@ -234,8 +234,8 @@
       "week": 13
     },
     "most_titles": {
-      "team": "Trent/Colin",
-      "display": "Trent & Colin",
+      "team": "Clay/Ryan",
+      "display": "Clay & Ryan",
       "count": 3
     }
   },
@@ -282,8 +282,8 @@
     },
     {
       "year": 2021,
-      "champion": "Walker/Cory",
-      "champion_display": "Walker & Cory",
+      "champion": "Clay/Ryan",
+      "champion_display": "Clay & Ryan",
       "runner_up": "Trent/Colin",
       "runner_up_display": "Trent & Colin",
       "champion_pts": 167.7,
@@ -2587,8 +2587,8 @@
       ],
       "Championship": [
         {
-          "winner": "Walker/Cory",
-          "winner_display": "Walker & Cory",
+          "winner": "Clay/Ryan",
+          "winner_display": "Clay & Ryan",
           "loser": "Trent/Colin",
           "loser_display": "Trent & Colin",
           "winner_pts": 167.7,
@@ -2893,6 +2893,15 @@
   },
   "playoff_standings": [
     {
+      "team": "Clay/Ryan",
+      "display": "Clay & Ryan",
+      "appearances": 10,
+      "wins": 12,
+      "losses": 7,
+      "win_pct": 0.6316,
+      "championships": 3
+    },
+    {
       "team": "Trent/Colin",
       "display": "Trent & Colin",
       "appearances": 10,
@@ -2905,18 +2914,9 @@
       "team": "Walker/Cory",
       "display": "Walker & Cory",
       "appearances": 9,
-      "wins": 9,
+      "wins": 8,
       "losses": 7,
-      "win_pct": 0.5625,
-      "championships": 3
-    },
-    {
-      "team": "Clay/Ryan",
-      "display": "Clay & Ryan",
-      "appearances": 10,
-      "wins": 11,
-      "losses": 7,
-      "win_pct": 0.6111,
+      "win_pct": 0.5333,
       "championships": 2
     },
     {
@@ -18808,9 +18808,9 @@
       "points_against": 18283.58,
       "ppg": 107.18,
       "playoff_appearances": 10,
-      "playoff_wins": 11,
+      "playoff_wins": 12,
       "playoff_losses": 7,
-      "championships": 2,
+      "championships": 3,
       "season_finishes": [
         {
           "year": 2013,
@@ -19688,9 +19688,9 @@
       "points_against": 18344.8,
       "ppg": 106.04,
       "playoff_appearances": 9,
-      "playoff_wins": 9,
+      "playoff_wins": 8,
       "playoff_losses": 7,
-      "championships": 3,
+      "championships": 2,
       "season_finishes": [
         {
           "year": 2013,
@@ -24256,9 +24256,9 @@
       "Trent/Colin": {
         "reg_wins": 9,
         "reg_losses": 11,
-        "pl_wins": 0,
+        "pl_wins": 1,
         "pl_losses": 2,
-        "total_wins": 9,
+        "total_wins": 10,
         "total_losses": 13,
         "matchups": [
           {
@@ -24429,6 +24429,19 @@
             "winner_pts": 111.86,
             "loser_pts": 97.38,
             "margin": 14.480000000000004
+          },
+          {
+            "year": 2021,
+            "week": 17,
+            "type": "playoff",
+            "playoff_round": "Championship",
+            "winner": "Clay/Ryan",
+            "winner_display": "Clay & Ryan",
+            "loser": "Trent/Colin",
+            "loser_display": "Trent & Colin",
+            "winner_pts": 167.7,
+            "loser_pts": 98.12,
+            "margin": 69.57999999999998
           },
           {
             "year": 2022,
@@ -40519,9 +40532,9 @@
         "reg_wins": 11,
         "reg_losses": 9,
         "pl_wins": 2,
-        "pl_losses": 0,
+        "pl_losses": 1,
         "total_wins": 13,
-        "total_losses": 9,
+        "total_losses": 10,
         "matchups": [
           {
             "year": 2013,
@@ -40691,6 +40704,19 @@
             "winner_pts": 111.86,
             "loser_pts": 97.38,
             "margin": 14.480000000000004
+          },
+          {
+            "year": 2021,
+            "week": 17,
+            "type": "playoff",
+            "playoff_round": "Championship",
+            "winner": "Clay/Ryan",
+            "winner_display": "Clay & Ryan",
+            "loser": "Trent/Colin",
+            "loser_display": "Trent & Colin",
+            "winner_pts": 167.7,
+            "loser_pts": 98.12,
+            "margin": 69.57999999999998
           },
           {
             "year": 2022,
@@ -42591,9 +42617,9 @@
         "reg_wins": 7,
         "reg_losses": 6,
         "pl_wins": 2,
-        "pl_losses": 1,
+        "pl_losses": 0,
         "total_wins": 9,
-        "total_losses": 7,
+        "total_losses": 6,
         "matchups": [
           {
             "year": 2013,
@@ -42737,19 +42763,6 @@
             "winner_pts": 94.04,
             "loser_pts": 68.06,
             "margin": 25.980000000000004
-          },
-          {
-            "year": 2021,
-            "week": 17,
-            "type": "playoff",
-            "playoff_round": "Championship",
-            "winner": "Walker/Cory",
-            "winner_display": "Walker & Cory",
-            "loser": "Trent/Colin",
-            "loser_display": "Trent & Colin",
-            "winner_pts": 167.7,
-            "loser_pts": 98.12,
-            "margin": 69.57999999999998
           },
           {
             "year": 2022,
@@ -45178,9 +45191,9 @@
       "Trent/Colin": {
         "reg_wins": 6,
         "reg_losses": 7,
-        "pl_wins": 1,
+        "pl_wins": 0,
         "pl_losses": 2,
-        "total_wins": 7,
+        "total_wins": 6,
         "total_losses": 9,
         "matchups": [
           {
@@ -45325,19 +45338,6 @@
             "winner_pts": 94.04,
             "loser_pts": 68.06,
             "margin": 25.980000000000004
-          },
-          {
-            "year": 2021,
-            "week": 17,
-            "type": "playoff",
-            "playoff_round": "Championship",
-            "winner": "Walker/Cory",
-            "winner_display": "Walker & Cory",
-            "loser": "Trent/Colin",
-            "loser_display": "Trent & Colin",
-            "winner_pts": 167.7,
-            "loser_pts": 98.12,
-            "margin": 69.57999999999998
           },
           {
             "year": 2022,
@@ -45909,7 +45909,12 @@
         {
           "team": "Walker/Cory",
           "display": "Walker & Cory",
-          "count": 12
+          "count": 11
+        },
+        {
+          "team": "Clay/Ryan",
+          "display": "Clay & Ryan",
+          "count": 10
         },
         {
           "team": "Pat/Tucker",
@@ -45920,11 +45925,6 @@
           "team": "Eric/Blake",
           "display": "Eric & Blake",
           "count": 10
-        },
-        {
-          "team": "Clay/Ryan",
-          "display": "Clay & Ryan",
-          "count": 9
         },
         {
           "team": "David/Marshall",
@@ -46319,9 +46319,9 @@
       "win_pct": 0.5345,
       "points_for": 18649.98,
       "ppg": 107.18,
-      "championships": 2,
+      "championships": 3,
       "playoff_appearances": 10,
-      "woodsheds_given": 9,
+      "woodsheds_given": 10,
       "woodsheds_received": 10
     },
     {
@@ -46415,9 +46415,9 @@
       "win_pct": 0.5287,
       "points_for": 18450.32,
       "ppg": 106.04,
-      "championships": 3,
+      "championships": 2,
       "playoff_appearances": 9,
-      "woodsheds_given": 12,
+      "woodsheds_given": 11,
       "woodsheds_received": 8
     }
   ]
