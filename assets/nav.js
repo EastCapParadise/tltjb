@@ -13,6 +13,7 @@
       <li><a href="owners.html">Owners</a></li>
       <li><a href="head-to-head.html">Head to Head</a></li>
       <li><a href="playoffs.html">Playoffs</a></li>
+      <li><a href="luck.html">Luck</a></li>
       <li><a href="records.html">Records</a></li>
     </ul>
     <button class="hamburger" aria-label="Menu">
@@ -25,6 +26,7 @@
     <a href="owners.html">👤 Owners</a>
     <a href="head-to-head.html">⚔️ Head to Head</a>
     <a href="playoffs.html">🏆 Playoffs</a>
+    <a href="luck.html">🍀 Luck</a>
     <a href="records.html">📊 Records</a>
   </div>
 </nav>`;

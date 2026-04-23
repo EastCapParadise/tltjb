@@ -588,6 +588,117 @@ def build_alltime_records():
     }
 
 # ---------------------------------------------------------------------------
+# Luck Index
+# ---------------------------------------------------------------------------
+def build_luck():
+    """
+    Net game luck = team_deviation - opp_deviation
+    where deviation = score minus that team's full-season regular-season average.
+    Positive = lucky (you over-performed and/or opponent under-performed).
+    """
+    # Step 1 — per-team per-season scoring averages (regular season only)
+    season_avgs = {}
+    for year in ALL_YEARS:
+        yg = [m for m in ALL_MATCHUPS if m["year"] == year and m["type"] == "regular"]
+        scores = defaultdict(list)
+        for m in yg:
+            scores[m["winner"]].append(m["winner_pts"])
+            scores[m["loser"]].append(m["loser_pts"])
+        season_avgs[year] = {t: sum(v) / len(v) for t, v in scores.items()}
+
+    # Step 2 — per-game luck log (one row per team per regular-season game)
+    game_log = []
+    for m in ALL_MATCHUPS:
+        if m["type"] != "regular":
+            continue
+        yr, wk = m["year"], m["week"]
+        avgs = season_avgs.get(yr, {})
+        for team, opp, tscore, oscore in [
+            (m["winner"], m["loser"], m["winner_pts"], m["loser_pts"]),
+            (m["loser"], m["winner"], m["loser_pts"], m["winner_pts"]),
+        ]:
+            t_avg = avgs.get(team, tscore)
+            o_avg = avgs.get(opp, oscore)
+            t_dev = round(tscore - t_avg, 2)
+            o_dev = round(oscore - o_avg, 2)
+            game_log.append({
+                "year": yr, "week": wk,
+                "team": team, "team_display": display(team),
+                "opp": opp, "opp_display": display(opp),
+                "score": tscore, "opp_score": oscore,
+                "team_deviation": t_dev,
+                "opp_deviation": o_dev,
+                "net_luck": round(t_dev - o_dev, 2),
+            })
+    game_log.sort(key=lambda x: (x["year"], x["week"], x["team"]))
+
+    # Step 3 — per-team career summary
+    luck_summary = {}
+    for team in ALL_TEAMS:
+        tg = [g for g in game_log if g["team"] == team]
+        if not tg:
+            luck_summary[team] = {
+                "team": team, "display": display(team),
+                "net_luck_per_game": 0.0,
+                "own_overperformance_per_game": 0.0,
+                "opponent_underperformance_per_game": 0.0,
+                "luckiest_game": None, "unluckiest_game": None,
+            }
+            continue
+        n = len(tg)
+        best = max(tg, key=lambda g: g["net_luck"])
+        worst = min(tg, key=lambda g: g["net_luck"])
+        luck_summary[team] = {
+            "team": team, "display": display(team),
+            "net_luck_per_game": round(sum(g["net_luck"] for g in tg) / n, 2),
+            "own_overperformance_per_game": round(sum(g["team_deviation"] for g in tg) / n, 2),
+            "opponent_underperformance_per_game": round(-sum(g["opp_deviation"] for g in tg) / n, 2),
+            "luckiest_game": {
+                "year": best["year"], "week": best["week"],
+                "opp": best["opp_display"], "margin": best["net_luck"],
+            },
+            "unluckiest_game": {
+                "year": worst["year"], "week": worst["week"],
+                "opp": worst["opp_display"], "margin": worst["net_luck"],
+            },
+        }
+
+    # Step 4 — per team-pair avg luck
+    luck_by_matchup = {}
+    for team in ALL_TEAMS:
+        luck_by_matchup[team] = {}
+        for opp in ALL_TEAMS:
+            if opp == team:
+                continue
+            mg = [g for g in game_log if g["team"] == team and g["opp"] == opp]
+            luck_by_matchup[team][opp] = {
+                "avg_luck": round(sum(g["net_luck"] for g in mg) / len(mg), 2) if mg else 0.0,
+                "games": len(mg),
+            }
+
+    # Step 5 — per team per season
+    luck_by_season = {}
+    for team in ALL_TEAMS:
+        luck_by_season[team] = {}
+        for year in ALL_YEARS:
+            yg = [g for g in game_log if g["team"] == team and g["year"] == year]
+            if not yg:
+                continue
+            n = len(yg)
+            luck_by_season[team][str(year)] = {
+                "net_luck": round(sum(g["net_luck"] for g in yg) / n, 2),
+                "own_component": round(sum(g["team_deviation"] for g in yg) / n, 2),
+                "opponent_component": round(-sum(g["opp_deviation"] for g in yg) / n, 2),
+            }
+
+    return {
+        "luck_summary": luck_summary,
+        "luck_by_matchup": luck_by_matchup,
+        "luck_by_season": luck_by_season,
+        "luck_game_log": game_log,
+    }
+
+# ---------------------------------------------------------------------------
 # Owner milestones
 # ---------------------------------------------------------------------------
 def build_milestones():
@@ -647,6 +758,7 @@ data = {
     "season_records": build_season_records(),
     "streaks": streaks,
     "milestones": build_milestones(),
+    "luck": build_luck(),
 }
 
 out_path = os.path.join(ROOT, "data", "data.json")

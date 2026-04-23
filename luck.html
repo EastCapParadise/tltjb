@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luck Index — TLTJB</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Luck-specific styles ─────────────────────────────────────── */
+    .luck-charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .luck-pill {
+      display: inline-block;
+      padding: 0.18rem 0.55rem;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      font-family: var(--font-head);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .luck-pill-pos { background: rgba(46,204,113,0.18); color: #2ecc71; border: 1px solid rgba(46,204,113,0.5); }
+    .luck-pill-neg { background: rgba(231,76,60,0.18); color: #e74c3c; border: 1px solid rgba(231,76,60,0.5); }
+    .luck-pill-zero { background: rgba(136,136,136,0.15); color: #888; border: 1px solid #333; }
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .heatmap-cell {
+      border-radius: 8px;
+      padding: 0.85rem 0.6rem;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: transform 0.12s;
+    }
+    .heatmap-cell:hover { transform: translateY(-2px); }
+    .heatmap-cell .hc-opp {
+      font-family: var(--font-head);
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 0.35rem;
+    }
+    .heatmap-cell .hc-value {
+      font-family: var(--font-head);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .heatmap-cell .hc-games {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.45);
+      margin-top: 0.15rem;
+    }
+    .luck-section-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+    .scatter-legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .scatter-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .scatter-legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    @media (max-width: 768px) {
+      .luck-charts-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <script src="assets/nav.js"></script>
+
+  <div class="page-header">
+    <h1>🍀 Luck Index</h1>
+    <p>Who got the breaks — and who got robbed. Opponent deviations from their season baselines, game by game.</p>
+  </div>
+
+  <div class="container">
+
+    <!-- ── Section 1: Top Strip ──────────────────────────────────── -->
+    <div class="section">
+      <div class="records-strip" id="luck-strip">
+        <div class="record-tile"><div class="record-label">Loading…</div></div>
+        <div class="record-tile"><div class="record-label">Loading…</div></div>
+        <div class="record-tile"><div class="record-label">Loading…</div></div>
+        <div class="record-tile"><div class="record-label">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── Section 2: All-Time Rankings ──────────────────────────── -->
+    <div class="section">
+      <h2 class="section-title">All-Time Luck Rankings</h2>
+      <p class="luck-section-note">Net luck per game = your deviation from your season avg minus your opponent's deviation from theirs. Positive = lucky (you overperformed and/or they underperformed).</p>
+      <div class="luck-charts-row">
+        <div>
+          <div class="chart-container" style="height:420px">
+            <canvas id="diverging-chart"></canvas>
+          </div>
+        </div>
+        <div>
+          <div class="chart-container" style="height:420px">
+            <canvas id="scatter-chart"></canvas>
+          </div>
+          <div class="scatter-legend" id="scatter-legend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Per-Owner View ─────────────────────────────── -->
+    <div class="section">
+      <h2 class="section-title">Per-Owner View</h2>
+      <div class="dropdown-row">
+        <label style="font-family:var(--font-head);font-size:0.85rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted)">Owner:</label>
+        <select id="owner-select"></select>
+      </div>
+      <h3 style="font-family:var(--font-head);font-size:0.95rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.75rem">Avg Net Luck vs Each Opponent</h3>
+      <div class="heatmap-grid" id="heatmap-wrap"></div>
+      <h3 style="font-family:var(--font-head);font-size:0.95rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.75rem">Season-by-Season Luck Trend</h3>
+      <div class="chart-container" style="height:260px">
+        <canvas id="trend-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Section 4: Game-by-Game Log ───────────────────────────── -->
+    <div class="section">
+      <h2 class="section-title">Game-by-Game Log</h2>
+      <div class="dropdown-row" style="margin-bottom:1rem">
+        <label style="font-family:var(--font-head);font-size:0.85rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted)">Filter by Owner:</label>
+        <select id="log-owner-filter"></select>
+      </div>
+      <div class="table-wrap">
+        <table id="log-table" data-sortable data-numeric-cols="0,1,4,5,6,7,8">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Wk</th>
+              <th>Owner</th>
+              <th>Opponent</th>
+              <th>Score</th>
+              <th>Opp Score</th>
+              <th>Own Dev</th>
+              <th>Opp Dev</th>
+              <th>Net Luck</th>
+            </tr>
+          </thead>
+          <tbody id="log-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="assets/utils.js"></script>
+  <script>
+  let divergingChart = null;
+  let scatterChart = null;
+  let trendChart = null;
+
+  // Color helper: intensity scales with abs(val), max at ±20 pts
+  function luckBg(val) {
+    if (Math.abs(val) < 0.5) return 'rgba(80,80,80,0.25)';
+    const intensity = Math.min(Math.abs(val) / 20, 1);
+    const alpha = 0.18 + intensity * 0.55;
+    return val > 0
+      ? `rgba(46,204,113,${alpha})`
+      : `rgba(231,76,60,${alpha})`;
+  }
+
+  function luckPill(val) {
+    const cls = val > 0.05 ? 'luck-pill-pos' : val < -0.05 ? 'luck-pill-neg' : 'luck-pill-zero';
+    const sign = val > 0 ? '+' : '';
+    return `<span class="luck-pill ${cls}">${sign}${val.toFixed(1)}</span>`;
+  }
+
+  function devCell(val) {
+    const sign = val > 0 ? '+' : '';
+    const cls = val > 0.5 ? 'text-green' : val < -0.5 ? 'text-red' : 'text-muted';
+    return `<span class="${cls}">${sign}${val.toFixed(1)}</span>`;
+  }
+
+  async function init() {
+    const data = await loadData();
+    const { luck_summary, luck_by_matchup, luck_by_season, luck_game_log } = data.luck;
+    const { alltime_standings, meta } = data;
+
+    buildStrip(luck_summary, luck_game_log);
+    buildDivergingChart(luck_summary);
+    buildScatterChart(luck_summary, alltime_standings);
+    buildOwnerSection(luck_summary, luck_by_matchup, luck_by_season, meta);
+    buildGameLog(luck_game_log);
+  }
+
+  // ── Section 1: Top Strip ─────────────────────────────────────────
+  function buildStrip(summary, gameLog) {
+    const teams = Object.values(summary);
+    const luckiest  = teams.reduce((a, b) => a.net_luck_per_game > b.net_luck_per_game ? a : b);
+    const unluckiest = teams.reduce((a, b) => a.net_luck_per_game < b.net_luck_per_game ? a : b);
+    const bestGame  = gameLog.reduce((a, b) => a.net_luck > b.net_luck ? a : b);
+    const worstGame = gameLog.reduce((a, b) => a.net_luck < b.net_luck ? a : b);
+
+    const lSign = luckiest.net_luck_per_game >= 0 ? '+' : '';
+    document.getElementById('luck-strip').innerHTML = `
+      <div class="record-tile">
+        <div class="record-label">🍀 Luckiest Team</div>
+        <div class="record-value" style="color:var(--green)">${lSign}${luckiest.net_luck_per_game.toFixed(2)}</div>
+        <div class="record-holder">${luckiest.display}</div>
+        <div class="record-meta">avg net luck / game</div>
+      </div>
+      <div class="record-tile">
+        <div class="record-label">😈 Unluckiest Team</div>
+        <div class="record-value" style="color:var(--red)">${unluckiest.net_luck_per_game.toFixed(2)}</div>
+        <div class="record-holder">${unluckiest.display}</div>
+        <div class="record-meta">avg net luck / game</div>
+      </div>
+      <div class="record-tile">
+        <div class="record-label">⭐ Best Single Game</div>
+        <div class="record-value" style="color:var(--green)">+${bestGame.net_luck.toFixed(1)}</div>
+        <div class="record-holder">${bestGame.team_display}</div>
+        <div class="record-meta">${bestGame.year} Wk ${bestGame.week} vs ${bestGame.opp_display}</div>
+      </div>
+      <div class="record-tile">
+        <div class="record-label">💀 Worst Single Game</div>
+        <div class="record-value" style="color:var(--red)">${worstGame.net_luck.toFixed(1)}</div>
+        <div class="record-holder">${worstGame.team_display}</div>
+        <div class="record-meta">${worstGame.year} Wk ${worstGame.week} vs ${worstGame.opp_display}</div>
+      </div>`;
+  }
+
+  // ── Section 2a: Diverging Bar ────────────────────────────────────
+  function buildDivergingChart(summary) {
+    const teams = Object.values(summary).sort((a, b) => a.net_luck_per_game - b.net_luck_per_game);
+    const labels  = teams.map(t => t.display);
+    const values  = teams.map(t => t.net_luck_per_game);
+    const colors  = values.map(v => v >= 0 ? 'rgba(46,204,113,0.72)' : 'rgba(231,76,60,0.72)');
+    const borders = values.map(v => v >= 0 ? '#2ecc71' : '#e74c3c');
+
+    if (divergingChart) divergingChart.destroy();
+    divergingChart = new Chart(
+      document.getElementById('diverging-chart').getContext('2d'),
+      {
+        type: 'bar',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: borders, borderWidth: 1 }] },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const v = ctx.raw;
+                  return `Net luck/game: ${v >= 0 ? '+' : ''}${v.toFixed(2)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#1e1e1e' },
+              ticks: { color: '#888', callback: v => (v >= 0 ? '+' : '') + v.toFixed(1) },
+              title: { display: true, text: 'Net Luck per Game', color: '#666', font: { size: 11 } },
+            },
+            y: { ticks: { color: '#ccc', font: { size: 11 } }, grid: { color: '#151515' } }
+          }
+        }
+      }
+    );
+  }
+
+  // ── Section 2b: Scatter (luck vs win%) ──────────────────────────
+  function buildScatterChart(summary, standings) {
+    const standMap = {};
+    standings.forEach(s => { standMap[s.team] = s; });
+
+    const points = Object.values(summary).map(t => ({
+      x: t.net_luck_per_game,
+      y: (standMap[t.team]?.win_pct || 0) * 100,
+      label: t.display,
+    }));
+
+    if (scatterChart) scatterChart.destroy();
+    scatterChart = new Chart(
+      document.getElementById('scatter-chart').getContext('2d'),
+      {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            data: points,
+            backgroundColor: points.map(p => p.x >= 0 ? 'rgba(46,204,113,0.75)' : 'rgba(231,76,60,0.75)'),
+            borderColor: points.map(p => p.x >= 0 ? '#2ecc71' : '#e74c3c'),
+            borderWidth: 1,
+            pointRadius: 9,
+            pointHoverRadius: 11,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const p = ctx.raw;
+                  return [
+                    p.label,
+                    `Luck/game: ${p.x >= 0 ? '+' : ''}${p.x.toFixed(2)}`,
+                    `Win%: ${p.y.toFixed(1)}%`,
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#1e1e1e' },
+              ticks: { color: '#888', callback: v => (v >= 0 ? '+' : '') + v.toFixed(1) },
+              title: { display: true, text: 'Net Luck per Game', color: '#666', font: { size: 11 } },
+            },
+            y: {
+              grid: { color: '#1e1e1e' },
+              ticks: { color: '#888', callback: v => v.toFixed(0) + '%' },
+              title: { display: true, text: 'Win %', color: '#666', font: { size: 11 } },
+            }
+          }
+        }
+      }
+    );
+
+    // Simple HTML legend below scatter
+    const legendEl = document.getElementById('scatter-legend');
+    legendEl.innerHTML = points
+      .sort((a, b) => b.x - a.x)
+      .map(p => {
+        const dotColor = p.x >= 0 ? '#2ecc71' : '#e74c3c';
+        const sign = p.x >= 0 ? '+' : '';
+        return `<div class="scatter-legend-item">
+          <div class="scatter-legend-dot" style="background:${dotColor}"></div>
+          <span>${p.label} &nbsp;<span style="color:${dotColor}">${sign}${p.x.toFixed(2)}</span></span>
+        </div>`;
+      }).join('');
+  }
+
+  // ── Section 3: Per-Owner View ────────────────────────────────────
+  function buildOwnerSection(summary, matchupData, seasonData, meta) {
+    const sel = document.getElementById('owner-select');
+    const teams = Object.values(summary).sort((a, b) => a.display.localeCompare(b.display));
+    teams.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.team;
+      opt.textContent = t.display;
+      sel.appendChild(opt);
+    });
+    const render = () => renderOwnerView(sel.value, summary, matchupData, seasonData, meta);
+    sel.addEventListener('change', render);
+    render();
+  }
+
+  function renderOwnerView(teamId, summary, matchupData, seasonData, meta) {
+    const allOpps = Object.values(summary)
+      .filter(t => t.team !== teamId)
+      .sort((a, b) => a.display.localeCompare(b.display));
+
+    // Heatmap cells
+    document.getElementById('heatmap-wrap').innerHTML = allOpps.map(opp => {
+      const rec = (matchupData[teamId] || {})[opp.team] || { avg_luck: 0, games: 0 };
+      const v = rec.avg_luck;
+      const sign = v >= 0 ? '+' : '';
+      return `<div class="heatmap-cell" style="background:${luckBg(v)}">
+        <div class="hc-opp">${opp.display}</div>
+        <div class="hc-value">${sign}${v.toFixed(1)}</div>
+        <div class="hc-games">${rec.games} game${rec.games !== 1 ? 's' : ''}</div>
+      </div>`;
+    }).join('');
+
+    // Season trend chart
+    const teamSeasons = seasonData[teamId] || {};
+    const years = meta.years.filter(y => teamSeasons[String(y)] !== undefined);
+    const netLucks = years.map(y => teamSeasons[String(y)].net_luck);
+
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(
+      document.getElementById('trend-chart').getContext('2d'),
+      {
+        type: 'line',
+        data: {
+          labels: years,
+          datasets: [{
+            label: 'Net Luck / Game',
+            data: netLucks,
+            borderColor: '#c8a951',
+            backgroundColor: 'rgba(200,169,81,0.08)',
+            pointBackgroundColor: netLucks.map(v => v >= 0 ? '#2ecc71' : '#e74c3c'),
+            pointBorderColor: netLucks.map(v => v >= 0 ? '#2ecc71' : '#e74c3c'),
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            tension: 0.3,
+            fill: true,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const v = ctx.raw;
+                  return `Net luck/game: ${v >= 0 ? '+' : ''}${v.toFixed(2)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              grid: { color: '#1e1e1e' },
+              ticks: { color: '#888', callback: v => (v >= 0 ? '+' : '') + v.toFixed(1) },
+              title: { display: true, text: 'Net Luck per Game', color: '#666', font: { size: 11 } },
+            },
+            x: { ticks: { color: '#888' }, grid: { color: '#1e1e1e' } }
+          }
+        }
+      }
+    );
+  }
+
+  // ── Section 4: Game Log ──────────────────────────────────────────
+  function buildGameLog(gameLog) {
+    const filterSel = document.getElementById('log-owner-filter');
+
+    // Populate filter options
+    const allOpt = document.createElement('option');
+    allOpt.value = '';
+    allOpt.textContent = 'All Owners';
+    filterSel.appendChild(allOpt);
+
+    const seen = new Set();
+    gameLog.forEach(g => {
+      if (!seen.has(g.team)) {
+        seen.add(g.team);
+        const opt = document.createElement('option');
+        opt.value = g.team;
+        opt.textContent = g.team_display;
+        filterSel.appendChild(opt);
+      }
+    });
+    // Sort options alphabetically (keeping "All Owners" first)
+    const opts = Array.from(filterSel.options).slice(1).sort((a, b) => a.text.localeCompare(b.text));
+    opts.forEach(o => filterSel.appendChild(o));
+
+    function render(filter) {
+      const rows = filter ? gameLog.filter(g => g.team === filter) : gameLog;
+      document.getElementById('log-tbody').innerHTML = rows.map(g => `
+        <tr>
+          <td>${g.year}</td>
+          <td>${g.week}</td>
+          <td class="name-col"><strong>${g.team_display}</strong></td>
+          <td class="name-col">${g.opp_display}</td>
+          <td>${g.score.toFixed(1)}</td>
+          <td>${g.opp_score.toFixed(1)}</td>
+          <td>${devCell(g.team_deviation)}</td>
+          <td>${devCell(g.opp_deviation)}</td>
+          <td>${luckPill(g.net_luck)}</td>
+        </tr>`).join('');
+      initSortableTables();
+    }
+
+    filterSel.addEventListener('change', () => render(filterSel.value));
+    render('');
+  }
+
+  init();
+  </script>
+</body>
+</html>
