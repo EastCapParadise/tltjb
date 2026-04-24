@@ -149,6 +149,8 @@
       <div class="dropdown-row" style="margin-bottom:1rem">
         <label style="font-family:var(--font-head);font-size:0.85rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted)">Filter by Owner:</label>
         <select id="log-owner-filter"></select>
+        <label style="font-family:var(--font-head);font-size:0.85rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-left:1rem">Season:</label>
+        <select id="log-season-filter"></select>
       </div>
       <div class="table-wrap">
         <table id="log-table" data-sortable data-numeric-cols="0,1,4,5,6,7,8">
@@ -451,8 +453,9 @@
   // ── Section 4: Game Log ──────────────────────────────────────────
   function buildGameLog(gameLog) {
     const filterSel = document.getElementById('log-owner-filter');
+    const seasonSel = document.getElementById('log-season-filter');
 
-    // Populate filter options
+    // Populate owner filter
     const allOpt = document.createElement('option');
     allOpt.value = '';
     allOpt.textContent = 'All Owners';
@@ -472,8 +475,27 @@
     const opts = Array.from(filterSel.options).slice(1).sort((a, b) => a.text.localeCompare(b.text));
     opts.forEach(o => filterSel.appendChild(o));
 
-    function render(filter) {
-      const rows = filter ? gameLog.filter(g => g.team === filter) : gameLog;
+    // Populate season filter
+    const allSeasonOpt = document.createElement('option');
+    allSeasonOpt.value = '';
+    allSeasonOpt.textContent = 'All Seasons';
+    seasonSel.appendChild(allSeasonOpt);
+
+    const years = [...new Set(gameLog.map(g => g.year))].sort((a, b) => b - a);
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      seasonSel.appendChild(opt);
+    });
+
+    function render() {
+      const ownerFilter = filterSel.value;
+      const yearFilter = seasonSel.value;
+      const rows = gameLog.filter(g =>
+        (!ownerFilter || g.team === ownerFilter) &&
+        (!yearFilter || String(g.year) === yearFilter)
+      );
       document.getElementById('log-tbody').innerHTML = rows.map(g => `
         <tr>
           <td>${g.year}</td>
@@ -489,8 +511,9 @@
       initSortableTables();
     }
 
-    filterSel.addEventListener('change', () => render(filterSel.value));
-    render('');
+    filterSel.addEventListener('change', render);
+    seasonSel.addEventListener('change', render);
+    render();
   }
 
   init();
