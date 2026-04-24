@@ -115,8 +115,10 @@
     document.getElementById('rec-blowout').textContent = `+${fmt(rec.biggest_blowout.margin)}`;
     document.getElementById('rec-blowout-team').textContent = rec.biggest_blowout.winner_display;
     document.getElementById('rec-blowout-meta').textContent = `vs ${rec.biggest_blowout.loser_display} (${rec.biggest_blowout.year})`;
-    document.getElementById('rec-titles').textContent = rec.most_titles.count;
-    document.getElementById('rec-titles-team').textContent = rec.most_titles.display;
+    const maxTitles = Math.max(...st.map(r => r.championships));
+    const titledOwners = st.filter(r => r.championships === maxTitles);
+    document.getElementById('rec-titles').textContent = maxTitles;
+    document.getElementById('rec-titles-team').textContent = titledOwners.map(r => r.display).join(' & ');
 
     // Standings
     const tbody = document.getElementById('standings-body');
